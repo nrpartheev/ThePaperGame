@@ -2,12 +2,8 @@ import os
 import pandas as pd
 import requests
 from pymongo import MongoClient
-from dotenv import load_dotenv
 from datetime import datetime
 import pytz
-
-load_dotenv(dotenv_path=".env")
-
 
 mongoDBURL = os.getenv("MONGODB_URL")
 csvfile = os.getenv("CSV_FILE_PATH")

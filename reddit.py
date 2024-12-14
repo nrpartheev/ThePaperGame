@@ -2,20 +2,47 @@ import os
 from dotenv import load_dotenv
 import praw
 from orders import process_order, process_user
+from logger import logger
 
-load_dotenv(dotenv_path=".env")
+def initialize_reddit_client() -> praw.Reddit:
+    required_vars = [
+        "REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET", 
+        "REDDIT_USERNAME", "REDDIT_PASSWORD", 
+        "REDDIT_USER_AGENT"
+    ]
+    
+    missing_vars = [var for var in required_vars if os.getenv(var) is None]
+    
+    if missing_vars:
+        error_message = f"Missing environment variables: {', '.join(missing_vars)}"
+        logger.error(error_message)
+        raise ValueError(error_message)
 
-reddit = praw.Reddit(
-    client_id=os.getenv("REDDIT_CLIENT_ID"),
-    client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
-    username=os.getenv("REDDIT_USERNAME"),
-    password=os.getenv("REDDIT_PASSWORD"),
-    user_agent=os.getenv("REDDIT_USER_AGENT")
-)
+    client_id: str = os.getenv("REDDIT_CLIENT_ID")
+    client_secret: str = os.getenv("REDDIT_CLIENT_SECRET")
+    username: str = os.getenv("REDDIT_USERNAME")
+    password: str = os.getenv("REDDIT_PASSWORD")
+    user_agent: str = os.getenv("REDDIT_USER_AGENT")
 
-SUBREDDIT_NAME = os.getenv("SUBREDDIT_NAME")
+    try:
+        reddit = praw.Reddit(
+            client_id=client_id,
+            client_secret=client_secret,
+            username=username,
+            password=password,
+            user_agent=user_agent
+        )
+        
+        logger.info("Successfully initialized Reddit client.")
+        return reddit
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise
 
 def monitor_subreddit():
+    subreddit_name = os.getenv("SUBREDDIT_NAME")
+    if subreddit_name is None:
+        logger.error(f"Missing environment variable: SUBREDDIT_NAME")
     subreddit = reddit.subreddit(SUBREDDIT_NAME)
     for post in subreddit.stream.submissions(skip_existing=True):
         client = post.author
@@ -45,4 +72,5 @@ def monitor_subreddit():
 
 if __name__ == "__main__":
     print("Bot is running...")
+    load_dotenv(dotenv_path=".env")
     monitor_subreddit()
